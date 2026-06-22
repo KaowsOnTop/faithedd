@@ -1,0 +1,2634 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Discipline Points — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Expanded:wght@600;700;800&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DISCIPLINE POINTS — DESIGN TOKENS
+   Direction: "Instrument Panel" — noir encre, blancs cassés,
+   gris graphite, accent unique ambre-signal.
+   ============================================================ */
+:root{
+  /* Couleurs de base */
+  --ink-950:#0A0A0B;
+  --ink-900:#111113;
+  --ink-850:#16161A;
+  --ink-800:#1C1C21;
+  --ink-700:#26262D;
+  --ink-600:#34343D;
+  --ink-500:#4A4A54;
+  --line:#2A2A31;
+  --line-soft:#1F1F24;
+
+  --paper-0:#FAFAF8;
+  --paper-50:#F3F2EF;
+  --paper-100:#E8E7E2;
+
+  --gray-300:#C7C6C2;
+  --gray-400:#9C9B97;
+  --gray-500:#76757A;
+  --gray-600:#56565C;
+
+  /* Accent signal — ambre instrument, jamais décoratif */
+  --signal-500:#F2A93B;
+  --signal-400:#F6BE5E;
+  --signal-600:#D88F22;
+  --signal-glow: rgba(242,169,59,0.35);
+
+  /* États de performance (jours du calendrier) */
+  --perf-excellent:#F2A93B; /* >=90% */
+  --perf-good:#CFCDC6;      /* 70-89% */
+  --perf-mid:#5C5B61;       /* 40-69% */
+  --perf-low:#2A2A2E;       /* <40% */
+  --perf-empty:#181819;     /* pas de tâches */
+
+  /* Typographie */
+  --font-display:'Archivo Expanded', sans-serif;
+  --font-body:'Inter', sans-serif;
+  --font-mono:'Space Mono', monospace;
+
+  /* Radius / ombres */
+  --r-sm:10px;
+  --r-md:16px;
+  --r-lg:22px;
+  --r-xl:28px;
+  --shadow-card: 0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 24px rgba(0,0,0,0.35);
+  --shadow-pop: 0 12px 40px rgba(0,0,0,0.5);
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{
+  background:var(--ink-950);
+  font-family:var(--font-body);
+  color:var(--paper-0);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ============================================================
+   LAYOUT DE DEMONSTRATION (galerie de frames téléphone)
+   ============================================================ */
+.gallery{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(242,169,59,0.05), transparent 40%),
+    radial-gradient(circle at 85% 90%, rgba(242,169,59,0.04), transparent 45%),
+    var(--ink-950);
+  padding:64px 32px 120px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:56px;
+}
+.gallery-header{
+  text-align:center;
+  max-width:680px;
+  margin-bottom:8px;
+}
+.gallery-eyebrow{
+  font-family:var(--font-mono);
+  font-size:12px;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--signal-500);
+  margin-bottom:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+}
+.gallery-eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--signal-500); box-shadow:0 0 12px var(--signal-glow);}
+.gallery-header h1{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:42px;
+  letter-spacing:-0.01em;
+  color:var(--paper-0);
+  margin-bottom:14px;
+}
+.gallery-header p{
+  font-size:16px;
+  color:var(--gray-400);
+  line-height:1.6;
+}
+
+.frames-row{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:40px;
+  max-width:1480px;
+}
+.frame-block{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:18px;
+}
+.frame-label{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--gray-500);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.frame-label .idx{color:var(--signal-500);}
+
+/* Frame téléphone */
+.phone{
+  width:375px;
+  height:812px;
+  background:var(--ink-950);
+  border-radius:54px;
+  padding:12px;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.06),
+    0 40px 80px rgba(0,0,0,0.55),
+    0 10px 30px rgba(0,0,0,0.4);
+  position:relative;
+  flex-shrink:0;
+}
+.phone-screen{
+  width:100%;
+  height:100%;
+  background:var(--ink-950);
+  border-radius:42px;
+  overflow:hidden;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+}
+.notch{
+  position:absolute;
+  top:12px;
+  left:50%;
+  transform:translateX(-50%);
+  width:120px;
+  height:28px;
+  background:var(--ink-950);
+  border-radius:0 0 18px 18px;
+  z-index:50;
+}
+.statusbar{
+  height:52px;
+  flex-shrink:0;
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  padding:0 28px 8px;
+  font-family:var(--font-body);
+  font-size:14px;
+  font-weight:600;
+  color:var(--paper-0);
+  position:relative;
+  z-index:40;
+}
+.statusbar .time{font-weight:700;}
+.statusbar .icons{display:flex; align-items:center; gap:5px;}
+
+.screen-content{
+  flex:1;
+  overflow-y:auto;
+  -ms-overflow-style:none;
+  scrollbar-width:none;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+}
+.screen-content::-webkit-scrollbar{display:none;}
+
+/* Tabbar */
+.tabbar{
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:space-around;
+  padding:10px 8px 26px;
+  background:rgba(17,17,19,0.88);
+  backdrop-filter:blur(20px);
+  border-top:1px solid var(--line-soft);
+  position:relative;
+  z-index:30;
+}
+.tab{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:5px;
+  color:var(--gray-500);
+  font-size:10.5px;
+  font-weight:600;
+  letter-spacing:0.01em;
+  flex:1;
+}
+.tab.active{color:var(--paper-0);}
+.tab svg{width:23px; height:23px;}
+.tab.active svg{filter:drop-shadow(0 0 8px var(--signal-glow));}
+
+/* Scrollbar visible style note removed for mobile */
+
+@media (max-width: 880px){
+  .phone{width:320px; height:692px; border-radius:46px;}
+  .phone-screen{border-radius:36px;}
+}
+
+/* ============================================================
+   ÉCRAN 01 — ACCUEIL
+   ============================================================ */
+.onb{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(242,169,59,0.14), transparent 55%),
+    var(--ink-950);
+  padding:0 28px;
+  position:relative;
+  overflow:hidden;
+}
+.onb-grid{
+  position:absolute;
+  inset:0;
+  background-image:
+    linear-gradient(var(--line-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+  background-size:28px 28px;
+  opacity:0.35;
+  mask-image:linear-gradient(to bottom, transparent, black 15%, black 60%, transparent);
+}
+.onb-top{
+  position:relative;
+  z-index:2;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding-top:18px;
+}
+.onb-mark{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:0.1em;
+  color:var(--gray-500);
+}
+.onb-mark .sq{width:7px;height:7px; background:var(--signal-500); box-shadow:0 0 10px var(--signal-glow);}
+
+.onb-hero{
+  position:relative;
+  z-index:2;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+}
+.onb-gauge-wrap{
+  position:relative;
+  width:230px;
+  height:230px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-bottom:8px;
+}
+.onb-gauge-num{
+  font-family:var(--font-display);
+  font-size:64px;
+  font-weight:800;
+  letter-spacing:-0.02em;
+  color:var(--paper-0);
+  line-height:1;
+}
+.onb-gauge-sub{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:0.14em;
+  color:var(--signal-500);
+  text-transform:uppercase;
+  margin-top:6px;
+}
+.onb-title{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:30px;
+  letter-spacing:-0.01em;
+  text-align:center;
+  color:var(--paper-0);
+  margin-top:26px;
+  line-height:1.15;
+}
+.onb-title span{color:var(--signal-500);}
+.onb-desc{
+  font-size:14.5px;
+  color:var(--gray-400);
+  text-align:center;
+  line-height:1.6;
+  margin-top:14px;
+  max-width:280px;
+}
+.onb-bottom{
+  position:relative;
+  z-index:2;
+  padding-bottom:42px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.btn-primary{
+  background:var(--paper-0);
+  color:var(--ink-950);
+  border:none;
+  border-radius:16px;
+  padding:18px;
+  font-family:var(--font-body);
+  font-weight:700;
+  font-size:15.5px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  letter-spacing:-0.01em;
+  cursor:pointer;
+}
+.btn-secondary{
+  background:transparent;
+  color:var(--gray-400);
+  border:none;
+  padding:14px;
+  font-family:var(--font-body);
+  font-weight:600;
+  font-size:14px;
+  text-align:center;
+  cursor:pointer;
+}
+.onb-dots{
+  display:flex;
+  justify-content:center;
+  gap:6px;
+  margin-bottom:28px;
+}
+.onb-dots .d{width:6px; height:6px; border-radius:50%; background:var(--ink-600);}
+.onb-dots .d.on{background:var(--signal-500); width:18px; border-radius:3px;}
+
+/* ============================================================
+   ÉCRAN 02 — DASHBOARD
+   ============================================================ */
+.dash{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  background:var(--ink-950);
+}
+.dash-header{
+  padding:6px 24px 18px;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+}
+.dash-greet-label{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--gray-500);
+  margin-bottom:6px;
+}
+.dash-greet-name{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:23px;
+  color:var(--paper-0);
+  letter-spacing:-0.01em;
+}
+.dash-avatar{
+  width:42px; height:42px;
+  border-radius:13px;
+  background:linear-gradient(145deg, var(--ink-700), var(--ink-850));
+  border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:15px;
+  color:var(--signal-400);
+}
+
+.dash-scroll{
+  flex:1;
+  overflow-y:auto;
+  padding:0 24px 28px;
+}
+
+/* Carte hero — score total + gauge */
+.hero-card{
+  background:linear-gradient(160deg, var(--ink-850), var(--ink-900) 60%);
+  border:1px solid var(--line);
+  border-radius:var(--r-xl);
+  padding:26px 22px 22px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:var(--shadow-card);
+  margin-bottom:16px;
+}
+.hero-card::before{
+  content:'';
+  position:absolute;
+  top:-60px; right:-60px;
+  width:200px; height:200px;
+  background:radial-gradient(circle, rgba(242,169,59,0.16), transparent 70%);
+}
+.hero-top-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  position:relative;
+  z-index:2;
+}
+.hero-eyebrow{
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--gray-500);
+}
+.level-chip{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  background:rgba(242,169,59,0.12);
+  border:1px solid rgba(242,169,59,0.35);
+  border-radius:20px;
+  padding:6px 12px 6px 8px;
+}
+.level-chip .lv-badge{
+  width:18px; height:18px;
+  border-radius:50%;
+  background:var(--signal-500);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-mono);
+  font-size:10px;
+  font-weight:700;
+  color:var(--ink-950);
+}
+.level-chip span{
+  font-size:12px;
+  font-weight:700;
+  color:var(--signal-400);
+  letter-spacing:0.01em;
+}
+
+.hero-mid{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-top:6px;
+  position:relative;
+  z-index:2;
+}
+.hero-score-block{display:flex; flex-direction:column;}
+.hero-score-num{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:52px;
+  letter-spacing:-0.02em;
+  color:var(--paper-0);
+  line-height:1;
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+}
+.hero-score-num small{
+  font-family:var(--font-mono);
+  font-size:14px;
+  font-weight:500;
+  color:var(--gray-500);
+}
+.hero-score-label{
+  font-size:13px;
+  color:var(--gray-400);
+  margin-top:6px;
+}
+.hero-score-label b{color:var(--paper-0); font-weight:600;}
+
+.hero-gauge-mini{position:relative; width:108px; height:108px; flex-shrink:0;}
+.hero-gauge-mini .gnum{
+  position:absolute; inset:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+}
+.hero-gauge-mini .gnum b{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:24px;
+  color:var(--paper-0);
+}
+.hero-gauge-mini .gnum small{
+  font-family:var(--font-mono);
+  font-size:9px;
+  color:var(--signal-500);
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  margin-top:1px;
+}
+
+.hero-foot{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:18px;
+  padding-top:16px;
+  border-top:1px solid var(--line-soft);
+  position:relative;
+  z-index:2;
+}
+.hero-foot svg{flex-shrink:0; color:var(--signal-500);}
+.hero-foot p{
+  font-size:12.5px;
+  color:var(--gray-400);
+  line-height:1.5;
+}
+.hero-foot p b{color:var(--paper-0); font-weight:600;}
+
+/* Mini stat row */
+.stat-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-bottom:16px;
+}
+.stat-card{
+  background:var(--ink-900);
+  border:1px solid var(--line-soft);
+  border-radius:var(--r-md);
+  padding:16px;
+}
+.stat-card .lbl{
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--gray-500);
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom:10px;
+}
+.stat-card .val{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:22px;
+  color:var(--paper-0);
+  display:flex;
+  align-items:baseline;
+  gap:4px;
+}
+.stat-card .val span{
+  font-family:var(--font-body);
+  font-size:12px;
+  font-weight:600;
+  color:var(--gray-500);
+}
+.stat-card .delta{
+  font-size:11px;
+  font-weight:600;
+  margin-top:6px;
+  display:flex;
+  align-items:center;
+  gap:3px;
+}
+.delta.up{color:#7FD99A;}
+.delta.down{color:#E07A6B;}
+
+/* Section title */
+.sec-title-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:14px;
+  margin-top:6px;
+}
+.sec-title{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:16px;
+  color:var(--paper-0);
+  letter-spacing:-0.01em;
+}
+.sec-link{
+  font-size:12px;
+  font-weight:600;
+  color:var(--signal-500);
+}
+
+/* Courbe de progression */
+.chart-card{
+  background:var(--ink-900);
+  border:1px solid var(--line-soft);
+  border-radius:var(--r-lg);
+  padding:20px 18px 16px;
+  margin-bottom:18px;
+}
+.chart-tabs{
+  display:flex;
+  gap:6px;
+  margin-bottom:16px;
+}
+.chart-tab{
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  letter-spacing:0.04em;
+  padding:6px 11px;
+  border-radius:8px;
+  color:var(--gray-500);
+  background:transparent;
+}
+.chart-tab.on{
+  background:var(--ink-700);
+  color:var(--paper-0);
+}
+.chart-svg-wrap{width:100%; position:relative;}
+.chart-x-labels{
+  display:flex;
+  justify-content:space-between;
+  padding:0 2px;
+  margin-top:8px;
+}
+.chart-x-labels span{
+  font-family:var(--font-mono);
+  font-size:9.5px;
+  color:var(--gray-600);
+}
+
+/* Liste de tâches du jour */
+.task-row{
+  display:flex;
+  align-items:center;
+  gap:13px;
+  background:var(--ink-900);
+  border:1px solid var(--line-soft);
+  border-radius:var(--r-md);
+  padding:14px 14px;
+  margin-bottom:10px;
+}
+.task-check{
+  width:24px; height:24px;
+  border-radius:8px;
+  border:1.6px solid var(--ink-600);
+  flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.task-check.done{
+  background:var(--signal-500);
+  border-color:var(--signal-500);
+}
+.task-row-body{flex:1; min-width:0;}
+.task-row-title{
+  font-size:14px;
+  font-weight:600;
+  color:var(--paper-0);
+  margin-bottom:3px;
+}
+.task-row-title.done{
+  color:var(--gray-500);
+  text-decoration:line-through;
+  text-decoration-color:var(--gray-600);
+}
+.task-row-meta{
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  color:var(--gray-500);
+}
+.task-pd-badge{
+  font-family:var(--font-mono);
+  font-size:11px;
+  font-weight:700;
+  color:var(--signal-400);
+  background:rgba(242,169,59,0.1);
+  border:1px solid rgba(242,169,59,0.25);
+  padding:5px 9px;
+  border-radius:8px;
+  flex-shrink:0;
+}
+.task-pd-badge.muted{
+  color:var(--gray-500);
+  background:var(--ink-800);
+  border-color:var(--line);
+}
+
+.fab{
+  position:absolute;
+  bottom:104px;
+  right:22px;
+  width:56px; height:56px;
+  border-radius:18px;
+  background:var(--paper-0);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 12px 28px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+  z-index:20;
+}
+
+/* ============================================================
+   ÉCRAN 03 — CALENDRIER
+   ============================================================ */
+.cal{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  background:var(--ink-950);
+}
+.cal-header{
+  padding:6px 24px 4px;
+}
+.cal-title{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:23px;
+  color:var(--paper-0);
+  letter-spacing:-0.01em;
+}
+.cal-month-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-top:18px;
+}
+.cal-month-name{
+  font-size:15px;
+  font-weight:700;
+  color:var(--paper-0);
+}
+.cal-nav{
+  display:flex;
+  gap:8px;
+}
+.cal-nav-btn{
+  width:30px; height:30px;
+  border-radius:9px;
+  background:var(--ink-800);
+  border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+  color:var(--gray-400);
+}
+
+.cal-scroll{
+  flex:1;
+  overflow-y:auto;
+  padding:18px 24px 28px;
+}
+
+.cal-legend{
+  display:flex;
+  gap:14px;
+  margin-bottom:18px;
+  flex-wrap:wrap;
+}
+.cal-legend-item{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-family:var(--font-mono);
+  font-size:9.5px;
+  letter-spacing:0.04em;
+  color:var(--gray-500);
+  text-transform:uppercase;
+}
+.cal-legend-dot{width:8px; height:8px; border-radius:50%;}
+
+.cal-grid-week{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  margin-bottom:10px;
+}
+.cal-grid-week span{
+  text-align:center;
+  font-family:var(--font-mono);
+  font-size:10px;
+  color:var(--gray-600);
+  letter-spacing:0.04em;
+}
+.cal-grid{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  row-gap:8px;
+}
+.cal-day{
+  aspect-ratio:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  border-radius:13px;
+  position:relative;
+  font-family:var(--font-body);
+}
+.cal-day .num{
+  font-size:13px;
+  font-weight:600;
+}
+.cal-day .score{
+  font-family:var(--font-mono);
+  font-size:8px;
+  margin-top:2px;
+  opacity:0.85;
+}
+.cal-day.empty{}
+.cal-day.excellent{ background:var(--signal-500); }
+.cal-day.excellent .num, .cal-day.excellent .score{color:var(--ink-950);}
+.cal-day.good{ background:var(--ink-700); }
+.cal-day.good .num{color:var(--paper-0);}
+.cal-day.good .score{color:var(--gray-300);}
+.cal-day.mid{ background:var(--ink-800); }
+.cal-day.mid .num{color:var(--gray-300);}
+.cal-day.mid .score{color:var(--gray-500);}
+.cal-day.low{ background:var(--ink-850); border:1px dashed var(--line); }
+.cal-day.low .num{color:var(--gray-500);}
+.cal-day.low .score{color:var(--gray-600);}
+.cal-day.future{ background:transparent; border:1px solid var(--line-soft); }
+.cal-day.future .num{color:var(--gray-600);}
+.cal-day.today{
+  box-shadow:0 0 0 2px var(--paper-0);
+}
+.cal-day.selected::after{
+  content:'';
+  position:absolute;
+  bottom:-8px;
+  width:5px; height:5px;
+  border-radius:50%;
+  background:var(--paper-0);
+}
+
+.cal-summary-card{
+  margin-top:24px;
+  background:var(--ink-900);
+  border:1px solid var(--line-soft);
+  border-radius:var(--r-lg);
+  padding:18px;
+}
+.cal-summary-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:11px 0;
+  border-bottom:1px solid var(--line-soft);
+}
+.cal-summary-row:last-child{border-bottom:none;}
+.cal-summary-row .k{
+  font-size:13px;
+  color:var(--gray-400);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.cal-summary-row .v{
+  font-family:var(--font-mono);
+  font-size:13.5px;
+  font-weight:700;
+  color:var(--paper-0);
+}
+.cal-summary-row .v.signal{color:var(--signal-400);}
+
+/* ============================================================
+   ÉCRAN 04 — DÉTAIL D'UNE JOURNÉE
+   ============================================================ */
+.dday{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  background:var(--ink-950);
+}
+.dday-nav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:6px 24px 0;
+}
+.dday-back{
+  width:34px; height:34px;
+  border-radius:11px;
+  background:var(--ink-800);
+  border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+  color:var(--paper-0);
+}
+.dday-nav-date{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--gray-400);
+}
+.dday-share{
+  width:34px; height:34px;
+  border-radius:11px;
+  background:var(--ink-800);
+  border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+  color:var(--gray-400);
+}
+
+.dday-scroll{
+  flex:1;
+  overflow-y:auto;
+  padding:18px 24px 28px;
+}
+
+.dday-hero{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:18px 0 8px;
+}
+.dday-day-title{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:21px;
+  color:var(--paper-0);
+  margin-bottom:18px;
+  text-align:center;
+}
+.dday-gauge-wrap{
+  position:relative;
+  width:190px; height:190px;
+  display:flex; align-items:center; justify-content:center;
+}
+.dday-gauge-num{
+  position:absolute;
+  display:flex; flex-direction:column; align-items:center;
+}
+.dday-gauge-num b{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:46px;
+  color:var(--paper-0);
+  line-height:1;
+}
+.dday-gauge-num small{
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  letter-spacing:0.1em;
+  color:var(--signal-500);
+  text-transform:uppercase;
+  margin-top:6px;
+}
+
+.dday-formula{
+  margin-top:14px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:var(--ink-900);
+  border:1px solid var(--line-soft);
+  border-radius:14px;
+  padding:12px 16px;
+}
+.dday-formula .f-block{display:flex; flex-direction:column; align-items:center;}
+.dday-formula .f-num{
+  font-family:var(--font-mono);
+  font-weight:700;
+  font-size:16px;
+  color:var(--paper-0);
+}
+.dday-formula .f-lbl{
+  font-family:var(--font-mono);
+  font-size:8.5px;
+  color:var(--gray-500);
+  letter-spacing:0.04em;
+  text-transform:uppercase;
+  margin-top:2px;
+}
+.dday-formula .f-op{
+  font-size:16px;
+  color:var(--gray-600);
+}
+
+.dday-section-title{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:15px;
+  color:var(--paper-0);
+  margin:26px 0 12px;
+}
+
+.dday-task{
+  display:flex;
+  align-items:center;
+  gap:13px;
+  background:var(--ink-900);
+  border:1px solid var(--line-soft);
+  border-radius:var(--r-md);
+  padding:14px;
+  margin-bottom:10px;
+}
+.dday-task.missed{
+  border-style:dashed;
+  opacity:0.75;
+}
+.dday-task-icon{
+  width:36px; height:36px;
+  border-radius:11px;
+  background:var(--ink-800);
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+  color:var(--signal-500);
+}
+.dday-task.missed .dday-task-icon{color:var(--gray-600);}
+.dday-task-body{flex:1;}
+.dday-task-title{font-size:13.5px; font-weight:600; color:var(--paper-0);}
+.dday-task.missed .dday-task-title{color:var(--gray-500);}
+.dday-task-time{font-family:var(--font-mono); font-size:10.5px; color:var(--gray-500); margin-top:3px;}
+.dday-task-pd{
+  font-family:var(--font-mono);
+  font-size:12px;
+  font-weight:700;
+  flex-shrink:0;
+}
+.dday-task-pd.win{color:var(--signal-400);}
+.dday-task-pd.lost{color:var(--gray-600); text-decoration:line-through;}
+
+.dday-compare{
+  margin-top:24px;
+  background:var(--ink-900);
+  border:1px solid var(--line-soft);
+  border-radius:var(--r-lg);
+  padding:18px;
+}
+.dday-compare-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:14px;
+}
+.dday-compare-row:last-child{margin-bottom:0;}
+.dday-compare-lbl{
+  width:64px;
+  font-family:var(--font-mono);
+  font-size:10px;
+  color:var(--gray-500);
+  letter-spacing:0.04em;
+}
+.dday-compare-bar-bg{
+  flex:1;
+  height:10px;
+  border-radius:6px;
+  background:var(--ink-800);
+  overflow:hidden;
+}
+.dday-compare-bar{
+  height:100%;
+  border-radius:6px;
+}
+.dday-compare-val{
+  width:38px;
+  text-align:right;
+  font-family:var(--font-mono);
+  font-size:11.5px;
+  font-weight:700;
+  color:var(--paper-0);
+}
+
+/* ============================================================
+   ÉCRAN 05 — CRÉATION DE TÂCHE
+   ============================================================ */
+.ctask{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  background:var(--ink-950);
+}
+.ctask-nav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:6px 24px 0;
+}
+.ctask-title-h{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:17px;
+  color:var(--paper-0);
+}
+.ctask-cancel{
+  font-size:14px;
+  color:var(--gray-400);
+  font-weight:500;
+}
+
+.ctask-scroll{
+  flex:1;
+  overflow-y:auto;
+  padding:22px 24px 28px;
+}
+
+.ctask-field-label{
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--gray-500);
+  margin-bottom:10px;
+  display:block;
+}
+.ctask-input-wrap{
+  margin-bottom:22px;
+}
+.ctask-text-input{
+  width:100%;
+  background:var(--ink-900);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:16px;
+  font-family:var(--font-body);
+  font-size:15px;
+  font-weight:600;
+  color:var(--paper-0);
+}
+.ctask-text-input::placeholder{color:var(--gray-600); font-weight:500;}
+
+.ctask-chip-row{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.ctask-chip{
+  font-size:12.5px;
+  font-weight:600;
+  color:var(--gray-400);
+  background:var(--ink-900);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:9px 13px;
+}
+.ctask-chip.on{
+  background:var(--ink-700);
+  color:var(--paper-0);
+  border-color:var(--ink-600);
+}
+
+/* Slider de points de discipline — élément signature de cet écran */
+.pd-slider-card{
+  background:linear-gradient(160deg, var(--ink-850), var(--ink-900));
+  border:1px solid var(--line);
+  border-radius:var(--r-xl);
+  padding:24px 22px;
+  margin:6px 0 24px;
+  position:relative;
+  overflow:hidden;
+}
+.pd-slider-card::before{
+  content:'';
+  position:absolute;
+  top:-50px; left:-50px;
+  width:160px; height:160px;
+  background:radial-gradient(circle, rgba(242,169,59,0.12), transparent 70%);
+}
+.pd-slider-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  position:relative;
+  z-index:2;
+  margin-bottom:18px;
+}
+.pd-slider-value{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:46px;
+  color:var(--paper-0);
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+}
+.pd-slider-value span{
+  font-family:var(--font-mono);
+  font-size:15px;
+  color:var(--signal-500);
+  font-weight:700;
+}
+.pd-diff-badge{
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  color:var(--gray-500);
+  text-align:right;
+  line-height:1.5;
+}
+.pd-diff-badge b{color:var(--paper-0);}
+
+.pd-slider-track-wrap{position:relative; z-index:2; padding:0 2px;}
+.pd-slider-track{
+  position:relative;
+  height:8px;
+  border-radius:6px;
+  background:var(--ink-700);
+  margin-bottom:14px;
+}
+.pd-slider-fill{
+  position:absolute;
+  left:0; top:0; bottom:0;
+  border-radius:6px;
+  background:linear-gradient(90deg, var(--signal-600), var(--signal-400));
+}
+.pd-slider-handle{
+  position:absolute;
+  top:50%;
+  width:26px; height:26px;
+  border-radius:50%;
+  background:var(--paper-0);
+  border:5px solid var(--signal-500);
+  transform:translate(-50%,-50%);
+  box-shadow:0 4px 14px rgba(0,0,0,0.4);
+}
+.pd-scale-labels{
+  display:flex;
+  justify-content:space-between;
+}
+.pd-scale-labels span{
+  font-family:var(--font-mono);
+  font-size:9.5px;
+  color:var(--gray-600);
+}
+
+.pd-presets{
+  display:flex;
+  gap:8px;
+  margin-top:16px;
+  position:relative;
+  z-index:2;
+}
+.pd-preset{
+  flex:1;
+  text-align:center;
+  padding:9px 0;
+  border-radius:10px;
+  background:var(--ink-800);
+  border:1px solid var(--line);
+}
+.pd-preset.on{background:var(--ink-700); border-color:var(--signal-600);}
+.pd-preset .pn{font-family:var(--font-mono); font-size:13px; font-weight:700; color:var(--paper-0);}
+.pd-preset .pl{font-size:8.5px; color:var(--gray-500); margin-top:2px; text-transform:uppercase; letter-spacing:0.04em;}
+
+.ctask-toggle-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:var(--ink-900);
+  border:1px solid var(--line-soft);
+  border-radius:14px;
+  padding:15px 16px;
+  margin-bottom:12px;
+}
+.ctask-toggle-label{display:flex; align-items:center; gap:10px;}
+.ctask-toggle-label svg{color:var(--gray-400); flex-shrink:0;}
+.ctask-toggle-text b{display:block; font-size:13.5px; font-weight:600; color:var(--paper-0);}
+.ctask-toggle-text small{display:block; font-size:11px; color:var(--gray-500); margin-top:2px;}
+.toggle{
+  width:42px; height:25px;
+  border-radius:14px;
+  background:var(--ink-700);
+  position:relative;
+  flex-shrink:0;
+}
+.toggle.on{background:var(--signal-500);}
+.toggle-knob{
+  position:absolute;
+  top:3px; left:3px;
+  width:19px; height:19px;
+  border-radius:50%;
+  background:var(--paper-0);
+}
+.toggle.on .toggle-knob{left:20px;}
+
+.ctask-submit-zone{
+  padding:14px 24px 36px;
+  border-top:1px solid var(--line-soft);
+}
+
+/* ============================================================
+   ÉCRAN 06 — STATISTIQUES AVANCÉES
+   ============================================================ */
+.stats{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  background:var(--ink-950);
+}
+.stats-header{padding:6px 24px 0;}
+.stats-title{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:23px;
+  color:var(--paper-0);
+}
+.stats-period-tabs{
+  display:flex;
+  gap:6px;
+  margin-top:16px;
+}
+.stats-period-tab{
+  flex:1;
+  text-align:center;
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  letter-spacing:0.04em;
+  padding:9px 0;
+  border-radius:10px;
+  color:var(--gray-500);
+  background:var(--ink-900);
+  border:1px solid var(--line-soft);
+}
+.stats-period-tab.on{
+  background:var(--paper-0);
+  color:var(--ink-950);
+  border-color:var(--paper-0);
+}
+
+.stats-scroll{
+  flex:1;
+  overflow-y:auto;
+  padding:18px 24px 28px;
+}
+
+.kpi-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-bottom:8px;
+}
+.kpi-card{
+  background:var(--ink-900);
+  border:1px solid var(--line-soft);
+  border-radius:var(--r-md);
+  padding:16px;
+}
+.kpi-card.wide{grid-column:span 2;}
+.kpi-card .lbl{
+  font-family:var(--font-mono);
+  font-size:9.5px;
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+  color:var(--gray-500);
+  margin-bottom:8px;
+}
+.kpi-card .val{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:24px;
+  color:var(--paper-0);
+}
+.kpi-card .val.signal{color:var(--signal-400);}
+.kpi-card .sub{font-size:11px; color:var(--gray-500); margin-top:4px;}
+
+.bar-chart-card{
+  background:var(--ink-900);
+  border:1px solid var(--line-soft);
+  border-radius:var(--r-lg);
+  padding:20px 18px 14px;
+  margin:18px 0;
+}
+.bar-chart-rows{display:flex; align-items:flex-end; gap:8px; height:120px; padding:0 4px;}
+.bar-col{flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end; gap:8px;}
+.bar-col .bar{width:100%; max-width:26px; border-radius:6px 6px 3px 3px;}
+.bar-col .lbl{font-family:var(--font-mono); font-size:9px; color:var(--gray-500);}
+
+.heat-legend-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:12px;
+}
+
+.best-streak-card{
+  background:linear-gradient(155deg, var(--ink-850), var(--ink-900));
+  border:1px solid var(--line);
+  border-radius:var(--r-lg);
+  padding:20px;
+  margin-bottom:16px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.best-streak-icon{
+  width:52px; height:52px;
+  border-radius:16px;
+  background:rgba(242,169,59,0.12);
+  border:1px solid rgba(242,169,59,0.3);
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.best-streak-num{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:26px;
+  color:var(--paper-0);
+}
+.best-streak-lbl{font-size:12px; color:var(--gray-400); margin-top:2px;}
+
+.month-compare-card{
+  background:var(--ink-900);
+  border:1px solid var(--line-soft);
+  border-radius:var(--r-lg);
+  padding:18px;
+}
+.month-compare-row{display:flex; align-items:center; gap:12px; margin-bottom:13px;}
+.month-compare-row:last-child{margin-bottom:0;}
+.month-compare-lbl{width:62px; font-family:var(--font-mono); font-size:10.5px; color:var(--gray-400);}
+.month-compare-bar-bg{flex:1; height:14px; border-radius:7px; background:var(--ink-800); overflow:hidden;}
+.month-compare-bar{height:100%; border-radius:7px;}
+.month-compare-val{width:36px; text-align:right; font-family:var(--font-mono); font-size:12px; font-weight:700; color:var(--paper-0);}
+
+/* ============================================================
+   ÉCRAN 07 — PROFIL UTILISATEUR
+   ============================================================ */
+.profile{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  background:var(--ink-950);
+}
+.profile-scroll{
+  flex:1;
+  overflow-y:auto;
+  padding:6px 24px 28px;
+}
+.profile-top{
+  display:flex;
+  justify-content:flex-end;
+  padding:4px 0 0;
+}
+.profile-settings-btn{
+  width:34px; height:34px;
+  border-radius:11px;
+  background:var(--ink-800);
+  border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+  color:var(--gray-400);
+}
+.profile-id{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:6px 0 20px;
+}
+.profile-avatar-big{
+  width:84px; height:84px;
+  border-radius:26px;
+  background:linear-gradient(150deg, var(--ink-700), var(--ink-850));
+  border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:30px;
+  color:var(--signal-400);
+  margin-bottom:14px;
+  position:relative;
+}
+.profile-avatar-big::after{
+  content:'7';
+  position:absolute;
+  bottom:-6px; right:-6px;
+  width:28px; height:28px;
+  border-radius:50%;
+  background:var(--signal-500);
+  color:var(--ink-950);
+  font-family:var(--font-mono);
+  font-size:13px;
+  font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  border:3px solid var(--ink-950);
+}
+.profile-name{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:20px;
+  color:var(--paper-0);
+}
+.profile-handle{
+  font-family:var(--font-mono);
+  font-size:11.5px;
+  color:var(--gray-500);
+  margin-top:4px;
+}
+
+.profile-rank-card{
+  background:linear-gradient(160deg, var(--ink-850), var(--ink-900));
+  border:1px solid var(--line);
+  border-radius:var(--r-lg);
+  padding:18px 20px;
+  margin-bottom:16px;
+  position:relative;
+  overflow:hidden;
+}
+.profile-rank-card::before{
+  content:'';
+  position:absolute;
+  top:-40px; right:-40px;
+  width:140px; height:140px;
+  background:radial-gradient(circle, rgba(242,169,59,0.14), transparent 70%);
+}
+.profile-rank-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  position:relative;
+  z-index:2;
+}
+.profile-rank-name{font-family:var(--font-display); font-weight:700; font-size:15px; color:var(--paper-0);}
+.profile-rank-next{font-family:var(--font-mono); font-size:10px; color:var(--gray-500); margin-top:3px;}
+.profile-rank-pts{font-family:var(--font-mono); font-size:13px; color:var(--signal-400); font-weight:700;}
+.profile-progress-bg{
+  height:8px; border-radius:5px; background:var(--ink-700);
+  margin-top:14px; overflow:hidden; position:relative; z-index:2;
+}
+.profile-progress-fill{height:100%; border-radius:5px; background:linear-gradient(90deg, var(--signal-600), var(--signal-400));}
+
+.profile-grid-stats{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+  margin-bottom:20px;
+}
+.pgs-card{
+  background:var(--ink-900);
+  border:1px solid var(--line-soft);
+  border-radius:14px;
+  padding:13px 10px;
+  text-align:center;
+}
+.pgs-card .v{font-family:var(--font-display); font-weight:800; font-size:18px; color:var(--paper-0);}
+.pgs-card .l{font-size:9.5px; color:var(--gray-500); margin-top:4px; text-transform:uppercase; letter-spacing:0.03em; font-family:var(--font-mono);}
+
+.profile-menu{
+  background:var(--ink-900);
+  border:1px solid var(--line-soft);
+  border-radius:var(--r-lg);
+  overflow:hidden;
+  margin-bottom:16px;
+}
+.profile-menu-row{
+  display:flex;
+  align-items:center;
+  gap:13px;
+  padding:15px 16px;
+  border-bottom:1px solid var(--line-soft);
+}
+.profile-menu-row:last-child{border-bottom:none;}
+.profile-menu-icon{
+  width:34px; height:34px;
+  border-radius:11px;
+  background:var(--ink-800);
+  display:flex; align-items:center; justify-content:center;
+  color:var(--gray-400);
+  flex-shrink:0;
+}
+.profile-menu-text{flex:1; font-size:13.5px; font-weight:600; color:var(--paper-0);}
+.profile-menu-chevron{color:var(--gray-600);}
+
+.badges-row{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding-bottom:4px;
+  margin-bottom:18px;
+}
+.badge-pill{
+  flex-shrink:0;
+  width:74px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+}
+.badge-circle{
+  width:58px; height:58px;
+  border-radius:50%;
+  background:var(--ink-900);
+  border:1.5px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+}
+.badge-circle.unlocked{
+  background:rgba(242,169,59,0.1);
+  border-color:var(--signal-500);
+}
+.badge-pill .bl{font-size:9.5px; color:var(--gray-500); text-align:center; line-height:1.3;}
+.badge-pill.unlocked .bl{color:var(--gray-300);}
+
+.btn-ghost-danger{
+  width:100%;
+  background:transparent;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+  text-align:center;
+  font-size:13.5px;
+  font-weight:600;
+  color:var(--gray-500);
+}
+</style>
+</head>
+<body>
+
+<div class="gallery">
+  <div class="gallery-header">
+    <div class="gallery-eyebrow"><span class="dot"></span>PROTOTYPE HAUTE FIDÉLITÉ</div>
+    <h1>Discipline Points</h1>
+    <p>Le tableau de bord de votre discipline personnelle. Vous fixez la valeur de vos engagements — l'app mesure votre capacité à les tenir. Sept écrans, direction "instrument de précision".</p>
+  </div>
+
+  <div class="frames-row" id="frames-row">
+
+    <!-- ============================================================
+         ÉCRAN 1 — ACCUEIL / SPLASH
+         ============================================================ -->
+    <div class="frame-block">
+      <div class="frame-label"><span class="idx">01</span> Écran d'accueil</div>
+      <div class="phone">
+        <div class="phone-screen" id="screen-onboarding"></div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         ÉCRAN 2 — DASHBOARD PRINCIPAL
+         ============================================================ -->
+    <div class="frame-block">
+      <div class="frame-label"><span class="idx">02</span> Dashboard principal</div>
+      <div class="phone">
+        <div class="phone-screen" id="screen-dashboard"></div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         ÉCRAN 3 — CALENDRIER
+         ============================================================ -->
+    <div class="frame-block">
+      <div class="frame-label"><span class="idx">03</span> Calendrier</div>
+      <div class="phone">
+        <div class="phone-screen" id="screen-calendar"></div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         ÉCRAN 4 — DÉTAIL D'UNE JOURNÉE
+         ============================================================ -->
+    <div class="frame-block">
+      <div class="frame-label"><span class="idx">04</span> Détail d'une journée</div>
+      <div class="phone">
+        <div class="phone-screen" id="screen-daydetail"></div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         ÉCRAN 5 — CRÉATION DE TÂCHE
+         ============================================================ -->
+    <div class="frame-block">
+      <div class="frame-label"><span class="idx">05</span> Création de tâche</div>
+      <div class="phone">
+        <div class="phone-screen" id="screen-createtask"></div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         ÉCRAN 6 — STATISTIQUES AVANCÉES
+         ============================================================ -->
+    <div class="frame-block">
+      <div class="frame-label"><span class="idx">06</span> Statistiques avancées</div>
+      <div class="phone">
+        <div class="phone-screen" id="screen-stats"></div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         ÉCRAN 7 — PROFIL UTILISATEUR
+         ============================================================ -->
+    <div class="frame-block">
+      <div class="frame-label"><span class="idx">07</span> Profil utilisateur</div>
+      <div class="phone">
+        <div class="phone-screen" id="screen-profile"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SCREENS_PLACEHOLDER -->
+
+<script>
+/* ============================================================
+   HELPERS — GAUGE SVG (signature visuelle de l'app)
+   Compte-tours mécanique : arc gradué + aiguille + valeur.
+   ============================================================ */
+function gaugeArc(cx, cy, r, startAngle, endAngle){
+  const toRad = a => (a - 90) * Math.PI/180;
+  const x1 = cx + r*Math.cos(toRad(startAngle));
+  const y1 = cy + r*Math.sin(toRad(startAngle));
+  const x2 = cx + r*Math.cos(toRad(endAngle));
+  const y2 = cy + r*Math.sin(toRad(endAngle));
+  const largeArc = (endAngle-startAngle) > 180 ? 1 : 0;
+  return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`;
+}
+
+function buildGaugeSVG({size=230, value=82, ticks=28, sweepStart=-130, sweepEnd=130, label=''}){
+  const cx = size/2, cy = size/2;
+  const rTrack = size*0.40;
+  const rTicks = size*0.46;
+  const angleRange = sweepEnd - sweepStart;
+  const valueAngle = sweepStart + (angleRange * value/100);
+
+  let ticksSvg = '';
+  for(let i=0;i<=ticks;i++){
+    const a = sweepStart + (angleRange * i/ticks);
+    const isMajor = i % 7 === 0;
+    const r1 = rTicks;
+    const r2 = isMajor ? rTicks - 11 : rTicks - 6;
+    const toRad = ang => (ang - 90) * Math.PI/180;
+    const x1 = cx + r1*Math.cos(toRad(a));
+    const y1 = cy + r1*Math.sin(toRad(a));
+    const x2 = cx + r2*Math.cos(toRad(a));
+    const y2 = cy + r2*Math.sin(toRad(a));
+    const lit = a <= valueAngle;
+    ticksSvg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${lit ? 'var(--signal-500)' : 'var(--ink-600)'}" stroke-width="${isMajor?2.2:1.3}" stroke-linecap="round" opacity="${lit?1:0.6}"/>`;
+  }
+
+  const trackPath = gaugeArc(cx, cy, rTrack, sweepStart, sweepEnd);
+  const valuePath = gaugeArc(cx, cy, rTrack, sweepStart, valueAngle);
+  const circumference = rTrack * (angleRange * Math.PI/180);
+
+  return `
+  <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none">
+    <defs>
+      <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#F6BE5E"/>
+        <stop offset="100%" stop-color="#D88F22"/>
+      </linearGradient>
+      <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="4" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    ${ticksSvg}
+    <path d="${trackPath}" stroke="var(--ink-700)" stroke-width="6" stroke-linecap="round"/>
+    <path d="${valuePath}" stroke="url(#gaugeGrad)" stroke-width="6" stroke-linecap="round" filter="url(#softGlow)"/>
+  </svg>`;
+}
+
+/* ============================================================
+   ÉCRAN 01 — ACCUEIL
+   ============================================================ */
+document.getElementById('screen-onboarding').innerHTML = `
+  <div class="statusbar">
+    <span class="time">09:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 18 12" width="18" height="12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="0.5"/><rect x="5" y="4" width="3" height="8" rx="0.5"/><rect x="10" y="1" width="3" height="11" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+      <svg viewBox="0 0 16 12" width="16" height="12" fill="currentColor"><path d="M8 2.5C11 2.5 13.5 3.7 15 5.5L13.7 7C12.5 5.5 10.4 4.5 8 4.5C5.6 4.5 3.5 5.5 2.3 7L1 5.5C2.5 3.7 5 2.5 8 2.5Z"/><circle cx="8" cy="9.5" r="1.6"/></svg>
+      <svg viewBox="0 0 25 12" width="25" height="12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="16" height="8" rx="1.2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+    </div>
+  </div>
+
+  <div class="onb">
+    <div class="onb-grid"></div>
+    <div class="onb-top">
+      <div class="onb-mark"><span class="sq"></span> DISCIPLINE&nbsp;POINTS</div>
+      <div class="onb-mark">V1.0</div>
+    </div>
+
+    <div class="onb-hero">
+      <div class="onb-gauge-wrap">
+        ${buildGaugeSVG({size:230, value:82})}
+        <div style="position:absolute; display:flex; flex-direction:column; align-items:center;">
+          <div class="onb-gauge-num">82<span style="font-size:28px; color:var(--gray-500);">%</span></div>
+          <div class="onb-gauge-sub">Score moyen</div>
+        </div>
+      </div>
+
+      <h1 class="onb-title">La discipline,<br><span>enfin mesurable.</span></h1>
+      <p class="onb-desc">Vous définissez vos tâches et leur valeur en Points de Discipline. L'app ne juge pas — elle mesure si vous tenez parole.</p>
+    </div>
+
+    <div class="onb-bottom">
+      <div class="onb-dots">
+        <span class="d on"></span><span class="d"></span><span class="d"></span>
+      </div>
+      <button class="btn-primary" onclick="sendPrompt && sendPrompt('continuer')">
+        Commencer
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="btn-secondary">J'ai déjà un compte</button>
+    </div>
+  </div>
+`;
+
+/* ============================================================
+   HELPER — LINE CHART SVG élégant (courbe + aire dégradée)
+   ============================================================ */
+function buildLineChart({width=327, height=140, data=[], color='#F2A93B', padTop=14, padBottom=14}){
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = (max - min) || 1;
+  const stepX = width / (data.length - 1);
+  const usableH = height - padTop - padBottom;
+
+  const points = data.map((v,i) => {
+    const x = i * stepX;
+    const y = padTop + usableH - ((v - min)/range) * usableH;
+    return [x,y];
+  });
+
+  let path = `M ${points[0][0]} ${points[0][1]}`;
+  for(let i=1;i<points.length;i++){
+    const [x0,y0] = points[i-1];
+    const [x1,y1] = points[i];
+    const cx = (x0+x1)/2;
+    path += ` Q ${x0} ${y0} ${cx} ${(y0+y1)/2}`;
+  }
+  path += ` T ${points[points.length-1][0]} ${points[points.length-1][1]}`;
+
+  const areaPath = path + ` L ${points[points.length-1][0]} ${height} L 0 ${height} Z`;
+
+  const dotsSvg = points.map((p,i) => {
+    const isLast = i === points.length-1;
+    return isLast ? `<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="${color}" stroke="var(--ink-900)" stroke-width="3"/>` : '';
+  }).join('');
+
+  const gridLines = [0.25,0.5,0.75].map(f =>
+    `<line x1="0" y1="${height*f}" x2="${width}" y2="${height*f}" stroke="var(--line-soft)" stroke-width="1" stroke-dasharray="3 4"/>`
+  ).join('');
+
+  return `
+  <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" fill="none" style="overflow:visible;">
+    <defs>
+      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity="0.28"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${gridLines}
+    <path d="${areaPath}" fill="url(#areaGrad)"/>
+    <path d="${path}" stroke="${color}" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+    ${dotsSvg}
+  </svg>`;
+}
+
+/* ============================================================
+   ÉCRAN 02 — DASHBOARD PRINCIPAL
+   ============================================================ */
+const dashboardData = [62, 70, 58, 80, 74, 91, 86];
+document.getElementById('screen-dashboard').innerHTML = `
+  <div class="statusbar">
+    <span class="time">09:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 18 12" width="18" height="12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="0.5"/><rect x="5" y="4" width="3" height="8" rx="0.5"/><rect x="10" y="1" width="3" height="11" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+      <svg viewBox="0 0 16 12" width="16" height="12" fill="currentColor"><path d="M8 2.5C11 2.5 13.5 3.7 15 5.5L13.7 7C12.5 5.5 10.4 4.5 8 4.5C5.6 4.5 3.5 5.5 2.3 7L1 5.5C2.5 3.7 5 2.5 8 2.5Z"/><circle cx="8" cy="9.5" r="1.6"/></svg>
+      <svg viewBox="0 0 25 12" width="25" height="12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="16" height="8" rx="1.2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+    </div>
+  </div>
+
+  <div class="dash">
+    <div class="dash-header">
+      <div>
+        <div class="dash-greet-label">MERCREDI 17 JUIN</div>
+        <div class="dash-greet-name">Bonjour, Yanis</div>
+      </div>
+      <div class="dash-avatar">Y</div>
+    </div>
+
+    <div class="dash-scroll">
+
+      <!-- HERO CARD : score total + niveau + gauge du jour -->
+      <div class="hero-card">
+        <div class="hero-top-row">
+          <div class="hero-eyebrow">SCORE TOTAL · POINTS DE DISCIPLINE</div>
+          <div class="level-chip"><span class="lv-badge">7</span><span>Niveau 7</span></div>
+        </div>
+
+        <div class="hero-mid">
+          <div class="hero-score-block">
+            <div class="hero-score-num">4 820 <small>PD</small></div>
+            <div class="hero-score-label">+180 PD cette semaine <b>· top 12%</b></div>
+          </div>
+          <div class="hero-gauge-mini">
+            ${buildGaugeSVG({size:108, value:86})}
+            <div class="gnum"><b>86%</b><small>Aujourd'hui</small></div>
+          </div>
+        </div>
+
+        <div class="hero-foot">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L9.8 5.6L14.6 6L11 9.2L12.1 14L8 11.4L3.9 14L5 9.2L1.4 6L6.2 5.6L8 1Z" fill="currentColor"/></svg>
+          <p><b>Belle régularité.</b> Vous tenez 86% de vos engagements depuis 6 jours — votre meilleure série du mois.</p>
+        </div>
+      </div>
+
+      <!-- MINI STATS -->
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="lbl">🔥 Série actuelle</div>
+          <div class="val">12 <span>jours</span></div>
+          <div class="delta up">▲ record personnel</div>
+        </div>
+        <div class="stat-card">
+          <div class="lbl">📈 Moy. 7 jours</div>
+          <div class="val">78 <span>%</span></div>
+          <div class="delta up">▲ +6 pts vs sem. dernière</div>
+        </div>
+      </div>
+
+      <!-- COURBE DE PROGRESSION -->
+      <div class="chart-card">
+        <div class="sec-title-row" style="margin-bottom:2px;">
+          <div class="sec-title">Évolution de la discipline</div>
+        </div>
+        <div class="chart-tabs">
+          <div class="chart-tab on">7 JOURS</div>
+          <div class="chart-tab">30 JOURS</div>
+          <div class="chart-tab">ANNÉE</div>
+        </div>
+        <div class="chart-svg-wrap">
+          ${buildLineChart({data: dashboardData})}
+        </div>
+        <div class="chart-x-labels">
+          <span>LUN</span><span>MAR</span><span>MER</span><span>JEU</span><span>VEN</span><span>SAM</span><span>DIM</span>
+        </div>
+      </div>
+
+      <!-- TÂCHES DU JOUR -->
+      <div class="sec-title-row">
+        <div class="sec-title">Engagements du jour</div>
+        <div class="sec-link">Voir tout</div>
+      </div>
+
+      <div class="task-row">
+        <div class="task-check done">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5L5 9.5L11 3.5" stroke="var(--ink-950)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="task-row-body">
+          <div class="task-row-title done">Séance de sport — 45 min</div>
+          <div class="task-row-meta">Terminée à 07:12</div>
+        </div>
+        <div class="task-pd-badge">+25 PD</div>
+      </div>
+
+      <div class="task-row">
+        <div class="task-check done">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5L5 9.5L11 3.5" stroke="var(--ink-950)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="task-row-body">
+          <div class="task-row-title done">Lecture — 20 pages</div>
+          <div class="task-row-meta">Terminée à 12:40</div>
+        </div>
+        <div class="task-pd-badge">+15 PD</div>
+      </div>
+
+      <div class="task-row">
+        <div class="task-check"></div>
+        <div class="task-row-body">
+          <div class="task-row-title">Préparer la présentation client</div>
+          <div class="task-row-meta">Prévue avant 18:00</div>
+        </div>
+        <div class="task-pd-badge muted">30 PD</div>
+      </div>
+
+      <div class="task-row">
+        <div class="task-check"></div>
+        <div class="task-row-body">
+          <div class="task-row-title">Couper-feu écrans — 22h00</div>
+          <div class="task-row-meta">Prévue avant 22:00</div>
+        </div>
+        <div class="task-pd-badge muted">10 PD</div>
+      </div>
+
+      <div style="height:90px;"></div>
+    </div>
+
+    <!-- FAB Ajouter tâche -->
+    <div class="fab">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3V19M3 11H19" stroke="var(--ink-950)" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </div>
+
+    <!-- TABBAR -->
+    <div class="tabbar">
+      <div class="tab active">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 13L9 8L13 12L20 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 19H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Dashboard
+      </div>
+      <div class="tab">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2.5" stroke="currentColor" stroke-width="2"/><path d="M3 10H21M8 3V6M16 3V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Calendrier
+      </div>
+      <div class="tab">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V5M4 19H20M9 19V11M14 19V7M19 19V14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Stats
+      </div>
+      <div class="tab">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="2"/><path d="M5 20C5 16.5 8 14 12 14C16 14 19 16.5 19 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Profil
+      </div>
+    </div>
+  </div>
+`;
+
+/* ============================================================
+   ÉCRAN 03 — CALENDRIER
+   ============================================================ */
+// Juin 2026 commence un lundi. 30 jours. Aujourd'hui = 17 juin.
+const calScores = {
+  1:88, 2:62, 3:45, 4:91, 5:78, 6:30, 7:0,
+  8:95, 9:84, 10:70, 11:55, 12:88, 13:20, 14:0,
+  15:90, 16:82, 17:86, // 17 = aujourd'hui
+};
+function dayClass(day){
+  if(day > 17) return 'future';
+  const s = calScores[day];
+  if(s === undefined) return 'future';
+  if(s === 0) return 'low';
+  if(s >= 85) return 'excellent';
+  if(s >= 65) return 'good';
+  if(s >= 35) return 'mid';
+  return 'low';
+}
+function buildCalendarGrid(){
+  let cells = '';
+  // juin 2026 : le 1er est un lundi -> pas de décalage initial
+  for(let d=1; d<=30; d++){
+    const cls = dayClass(d);
+    const isToday = d === 17;
+    const isSelected = d === 17;
+    const score = calScores[d];
+    const scoreLabel = (cls === 'future') ? '' : `<div class="score">${score}%</div>`;
+    cells += `<div class="cal-day ${cls} ${isToday?'today':''} ${isSelected?'selected':''}">
+      <div class="num">${d}</div>
+      ${scoreLabel}
+    </div>`;
+  }
+  return cells;
+}
+
+document.getElementById('screen-calendar').innerHTML = `
+  <div class="statusbar">
+    <span class="time">09:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 18 12" width="18" height="12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="0.5"/><rect x="5" y="4" width="3" height="8" rx="0.5"/><rect x="10" y="1" width="3" height="11" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+      <svg viewBox="0 0 16 12" width="16" height="12" fill="currentColor"><path d="M8 2.5C11 2.5 13.5 3.7 15 5.5L13.7 7C12.5 5.5 10.4 4.5 8 4.5C5.6 4.5 3.5 5.5 2.3 7L1 5.5C2.5 3.7 5 2.5 8 2.5Z"/><circle cx="8" cy="9.5" r="1.6"/></svg>
+      <svg viewBox="0 0 25 12" width="25" height="12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="16" height="8" rx="1.2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+    </div>
+  </div>
+
+  <div class="cal">
+    <div class="cal-header">
+      <div class="cal-title">Calendrier</div>
+      <div class="cal-month-row">
+        <div class="cal-month-name">Juin 2026</div>
+        <div class="cal-nav">
+          <div class="cal-nav-btn">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="cal-nav-btn">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2L10 7L5 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cal-scroll">
+      <div class="cal-legend">
+        <div class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--perf-excellent);"></span>Excellent · 85%+</div>
+        <div class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--perf-good);"></span>Bon · 65-84%</div>
+        <div class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--perf-mid);"></span>Moyen · 35-64%</div>
+        <div class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--perf-low);"></span>Faible · <35%</div>
+      </div>
+
+      <div class="cal-grid-week">
+        <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>
+      </div>
+      <div class="cal-grid">
+        ${buildCalendarGrid()}
+      </div>
+
+      <!-- Carte récap du jour sélectionné -->
+      <div class="cal-summary-card">
+        <div class="sec-title-row" style="margin-bottom:4px;">
+          <div class="sec-title" style="font-size:14px;">Mercredi 17 juin — sélectionné</div>
+        </div>
+        <div class="cal-summary-row">
+          <div class="k">📊 Score du jour</div>
+          <div class="v signal">86%</div>
+        </div>
+        <div class="cal-summary-row">
+          <div class="k">✅ Tâches réalisées</div>
+          <div class="v">2 / 4</div>
+        </div>
+        <div class="cal-summary-row">
+          <div class="k">⚡ Points gagnés</div>
+          <div class="v">40 / 80 PD</div>
+        </div>
+      </div>
+
+      <div style="height:90px;"></div>
+    </div>
+
+    <!-- TABBAR -->
+    <div class="tabbar">
+      <div class="tab">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 13L9 8L13 12L20 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 19H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Dashboard
+      </div>
+      <div class="tab active">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2.5" stroke="currentColor" stroke-width="2"/><path d="M3 10H21M8 3V6M16 3V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Calendrier
+      </div>
+      <div class="tab">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V5M4 19H20M9 19V11M14 19V7M19 19V14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Stats
+      </div>
+      <div class="tab">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="2"/><path d="M5 20C5 16.5 8 14 12 14C16 14 19 16.5 19 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Profil
+      </div>
+    </div>
+  </div>
+`;
+
+/* ============================================================
+   ÉCRAN 04 — DÉTAIL D'UNE JOURNÉE
+   ============================================================ */
+document.getElementById('screen-daydetail').innerHTML = `
+  <div class="statusbar">
+    <span class="time">09:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 18 12" width="18" height="12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="0.5"/><rect x="5" y="4" width="3" height="8" rx="0.5"/><rect x="10" y="1" width="3" height="11" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+      <svg viewBox="0 0 16 12" width="16" height="12" fill="currentColor"><path d="M8 2.5C11 2.5 13.5 3.7 15 5.5L13.7 7C12.5 5.5 10.4 4.5 8 4.5C5.6 4.5 3.5 5.5 2.3 7L1 5.5C2.5 3.7 5 2.5 8 2.5Z"/><circle cx="8" cy="9.5" r="1.6"/></svg>
+      <svg viewBox="0 0 25 12" width="25" height="12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="16" height="8" rx="1.2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+    </div>
+  </div>
+
+  <div class="dday">
+    <div class="dday-nav">
+      <div class="dday-back">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="dday-nav-date">12 JUIN 2026</div>
+      <div class="dday-share">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1V10M7.5 1L4.5 4M7.5 1L10.5 4M2 9V12.5C2 13.3 2.7 14 3.5 14H11.5C12.3 14 13 13.3 13 12.5V9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+
+    <div class="dday-scroll">
+      <div class="dday-hero">
+        <div class="dday-day-title">Vendredi 12 juin — Jour faible</div>
+        <div class="dday-gauge-wrap">
+          ${buildGaugeSVG({size:190, value:20})}
+          <div class="dday-gauge-num"><b>20%</b><small>Score du jour</small></div>
+        </div>
+
+        <div class="dday-formula">
+          <div class="f-block"><div class="f-num">20</div><div class="f-lbl">Réalisé</div></div>
+          <div class="f-op">/</div>
+          <div class="f-block"><div class="f-num">100</div><div class="f-lbl">Prévu</div></div>
+          <div class="f-op">=</div>
+          <div class="f-block"><div class="f-num" style="color:var(--signal-400);">20%</div><div class="f-lbl">Score</div></div>
+        </div>
+      </div>
+
+      <div class="dday-section-title">Tâches du jour</div>
+
+      <div class="dday-task">
+        <div class="dday-task-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8.5L6 12.5L14 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="dday-task-body">
+          <div class="dday-task-title">Méditation matinale — 10 min</div>
+          <div class="dday-task-time">Terminée à 06:50</div>
+        </div>
+        <div class="dday-task-pd win">+20 PD</div>
+      </div>
+
+      <div class="dday-task missed">
+        <div class="dday-task-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="dday-task-body">
+          <div class="dday-task-title">Séance de sport — 45 min</div>
+          <div class="dday-task-time">Non réalisée</div>
+        </div>
+        <div class="dday-task-pd lost">25 PD</div>
+      </div>
+
+      <div class="dday-task missed">
+        <div class="dday-task-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="dday-task-body">
+          <div class="dday-task-title">Rapport hebdomadaire</div>
+          <div class="dday-task-time">Non réalisée</div>
+        </div>
+        <div class="dday-task-pd lost">35 PD</div>
+      </div>
+
+      <div class="dday-task missed">
+        <div class="dday-task-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="dday-task-body">
+          <div class="dday-task-title">Couper-feu écrans — 22h00</div>
+          <div class="dday-task-time">Non réalisée</div>
+        </div>
+        <div class="dday-task-pd lost">20 PD</div>
+      </div>
+
+      <div class="dday-section-title">Comparaison avec les jours voisins</div>
+      <div class="dday-compare">
+        <div class="dday-compare-row">
+          <div class="dday-compare-lbl">JEU 11</div>
+          <div class="dday-compare-bar-bg"><div class="dday-compare-bar" style="width:55%; background:var(--perf-mid);"></div></div>
+          <div class="dday-compare-val">55%</div>
+        </div>
+        <div class="dday-compare-row">
+          <div class="dday-compare-lbl" style="color:var(--signal-500);">VEN 12</div>
+          <div class="dday-compare-bar-bg"><div class="dday-compare-bar" style="width:20%; background:var(--signal-500);"></div></div>
+          <div class="dday-compare-val" style="color:var(--signal-400);">20%</div>
+        </div>
+        <div class="dday-compare-row">
+          <div class="dday-compare-lbl">SAM 13</div>
+          <div class="dday-compare-bar-bg"><div class="dday-compare-bar" style="width:88%; background:var(--perf-excellent);"></div></div>
+          <div class="dday-compare-val">88%</div>
+        </div>
+      </div>
+
+      <div style="height:40px;"></div>
+    </div>
+  </div>
+`;
+
+/* ============================================================
+   ÉCRAN 05 — CRÉATION DE TÂCHE
+   ============================================================ */
+document.getElementById('screen-createtask').innerHTML = `
+  <div class="statusbar">
+    <span class="time">09:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 18 12" width="18" height="12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="0.5"/><rect x="5" y="4" width="3" height="8" rx="0.5"/><rect x="10" y="1" width="3" height="11" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+      <svg viewBox="0 0 16 12" width="16" height="12" fill="currentColor"><path d="M8 2.5C11 2.5 13.5 3.7 15 5.5L13.7 7C12.5 5.5 10.4 4.5 8 4.5C5.6 4.5 3.5 5.5 2.3 7L1 5.5C2.5 3.7 5 2.5 8 2.5Z"/><circle cx="8" cy="9.5" r="1.6"/></svg>
+      <svg viewBox="0 0 25 12" width="25" height="12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="16" height="8" rx="1.2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+    </div>
+  </div>
+
+  <div class="ctask">
+    <div class="ctask-nav">
+      <div class="ctask-cancel">Annuler</div>
+      <div class="ctask-title-h">Nouvelle tâche</div>
+      <div class="ctask-cancel" style="visibility:hidden;">Annuler</div>
+    </div>
+
+    <div class="ctask-scroll">
+
+      <label class="ctask-field-label">Intitulé de la tâche</label>
+      <div class="ctask-input-wrap">
+        <input class="ctask-text-input" type="text" placeholder="Ex. Séance de sport — 45 min" value="Rédiger le rapport hebdomadaire">
+      </div>
+
+      <label class="ctask-field-label">Catégorie</label>
+      <div class="ctask-input-wrap">
+        <div class="ctask-chip-row">
+          <div class="ctask-chip">🏃 Sport</div>
+          <div class="ctask-chip on">💼 Travail</div>
+          <div class="ctask-chip">📚 Apprentissage</div>
+          <div class="ctask-chip">🧘 Bien-être</div>
+          <div class="ctask-chip">+ Créer</div>
+        </div>
+      </div>
+
+      <label class="ctask-field-label">Valeur en Points de Discipline</label>
+      <div class="pd-slider-card">
+        <div class="pd-slider-top">
+          <div class="pd-slider-value">35 <span>PD</span></div>
+          <div class="pd-diff-badge">Difficulté perçue<br><b>Élevée</b></div>
+        </div>
+        <div class="pd-slider-track-wrap">
+          <div class="pd-slider-track">
+            <div class="pd-slider-fill" style="width:35%;"></div>
+            <div class="pd-slider-handle" style="left:35%;"></div>
+          </div>
+          <div class="pd-scale-labels">
+            <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+          </div>
+        </div>
+        <div class="pd-presets">
+          <div class="pd-preset"><div class="pn">10</div><div class="pl">Facile</div></div>
+          <div class="pd-preset"><div class="pn">20</div><div class="pl">Modéré</div></div>
+          <div class="pd-preset on"><div class="pn">35</div><div class="pl">Exigeant</div></div>
+          <div class="pd-preset"><div class="pn">50</div><div class="pl">Critique</div></div>
+        </div>
+      </div>
+
+      <label class="ctask-field-label">Planification</label>
+
+      <div class="ctask-toggle-row">
+        <div class="ctask-toggle-label">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M2 7H16M6 1.5V4M12 1.5V4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <div class="ctask-toggle-text"><b>Échéance aujourd'hui</b><small>Avant 18:00</small></div>
+        </div>
+        <div class="toggle on"><div class="toggle-knob"></div></div>
+      </div>
+
+      <div class="ctask-toggle-row">
+        <div class="ctask-toggle-label">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2C5.5 2 3 5 3 8.5C3 13 9 16.5 9 16.5C9 16.5 15 13 15 8.5C15 5 12.5 2 9 2Z" stroke="currentColor" stroke-width="1.6"/><path d="M2 17C2 17 5 16.2 9 16.2C13 16.2 16 17 16 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <div class="ctask-toggle-text"><b>Tâche récurrente</b><small>Se répète chaque jour ouvré</small></div>
+        </div>
+        <div class="toggle"><div class="toggle-knob"></div></div>
+      </div>
+
+      <div class="ctask-toggle-row">
+        <div class="ctask-toggle-label">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 1L15 4.5V13.5L9 17L3 13.5V4.5L9 1Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 6V11M9 13V13.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <div class="ctask-toggle-text"><b>Rappel de discipline</b><small>Notification 1h avant l'échéance</small></div>
+        </div>
+        <div class="toggle on"><div class="toggle-knob"></div></div>
+      </div>
+
+      <div style="height:20px;"></div>
+    </div>
+
+    <div class="ctask-submit-zone">
+      <button class="btn-primary">
+        Créer la tâche
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6.5 12L13 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+`;
+
+/* ============================================================
+   ÉCRAN 06 — STATISTIQUES AVANCÉES
+   ============================================================ */
+function buildBarChart(weekData){
+  // weekData: array of {lbl, val} val in 0-100
+  return weekData.map(w => {
+    const h = Math.max(8, w.val);
+    const color = w.val >= 85 ? 'var(--signal-500)' : w.val >= 65 ? 'var(--gray-300)' : w.val >= 35 ? 'var(--ink-600)' : 'var(--ink-700)';
+    return `<div class="bar-col">
+      <div class="bar" style="height:${h}%; background:${color};"></div>
+      <div class="lbl">${w.lbl}</div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('screen-stats').innerHTML = `
+  <div class="statusbar">
+    <span class="time">09:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 18 12" width="18" height="12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="0.5"/><rect x="5" y="4" width="3" height="8" rx="0.5"/><rect x="10" y="1" width="3" height="11" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+      <svg viewBox="0 0 16 12" width="16" height="12" fill="currentColor"><path d="M8 2.5C11 2.5 13.5 3.7 15 5.5L13.7 7C12.5 5.5 10.4 4.5 8 4.5C5.6 4.5 3.5 5.5 2.3 7L1 5.5C2.5 3.7 5 2.5 8 2.5Z"/><circle cx="8" cy="9.5" r="1.6"/></svg>
+      <svg viewBox="0 0 25 12" width="25" height="12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="16" height="8" rx="1.2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stats-header">
+      <div class="stats-title">Statistiques</div>
+      <div class="stats-period-tabs">
+        <div class="stats-period-tab">SEMAINE</div>
+        <div class="stats-period-tab on">MOIS</div>
+        <div class="stats-period-tab">ANNÉE</div>
+      </div>
+    </div>
+
+    <div class="stats-scroll">
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="lbl">Score moyen</div>
+          <div class="val signal">76%</div>
+          <div class="sub">▲ +4 pts vs mai</div>
+        </div>
+        <div class="kpi-card">
+          <div class="lbl">PD cumulés</div>
+          <div class="val">1 840</div>
+          <div class="sub">sur 30 jours</div>
+        </div>
+        <div class="kpi-card">
+          <div class="lbl">Meilleur jour</div>
+          <div class="val">98%</div>
+          <div class="sub">Samedi 8 juin</div>
+        </div>
+        <div class="kpi-card">
+          <div class="lbl">Tâches tenues</div>
+          <div class="val">142 <span style="font-size:13px; color:var(--gray-500); font-family:var(--font-body); font-weight:600;">/ 178</span></div>
+          <div class="sub">taux de 80%</div>
+        </div>
+      </div>
+
+      <div class="best-streak-card">
+        <div class="best-streak-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2C12 2 6 8 6 13C6 16.3 8.7 19 12 19C15.3 19 18 16.3 18 13C18 8 12 2 12 2Z" stroke="var(--signal-500)" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 19V22" stroke="var(--signal-500)" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <div class="best-streak-num">18 jours</div>
+          <div class="best-streak-lbl">Meilleure série disciplinée — établie en mai 2026</div>
+        </div>
+      </div>
+
+      <div class="sec-title-row" style="margin-top:4px;">
+        <div class="sec-title">Discipline par jour de la semaine</div>
+      </div>
+      <div class="bar-chart-card">
+        <div class="bar-chart-rows">
+          ${buildBarChart([
+            {lbl:'L', val:72}, {lbl:'M', val:65}, {lbl:'M', val:88},
+            {lbl:'J', val:54}, {lbl:'V', val:42}, {lbl:'S', val:95}, {lbl:'D', val:60}
+          ])}
+        </div>
+      </div>
+
+      <div class="sec-title-row">
+        <div class="sec-title">Comparaison mensuelle</div>
+      </div>
+      <div class="month-compare-card">
+        <div class="month-compare-row">
+          <div class="month-compare-lbl">AVRIL</div>
+          <div class="month-compare-bar-bg"><div class="month-compare-bar" style="width:58%; background:var(--ink-600);"></div></div>
+          <div class="month-compare-val">58%</div>
+        </div>
+        <div class="month-compare-row">
+          <div class="month-compare-lbl">MAI</div>
+          <div class="month-compare-bar-bg"><div class="month-compare-bar" style="width:72%; background:var(--gray-300);"></div></div>
+          <div class="month-compare-val">72%</div>
+        </div>
+        <div class="month-compare-row">
+          <div class="month-compare-lbl" style="color:var(--signal-500);">JUIN</div>
+          <div class="month-compare-bar-bg"><div class="month-compare-bar" style="width:76%; background:var(--signal-500);"></div></div>
+          <div class="month-compare-val" style="color:var(--signal-400);">76%</div>
+        </div>
+      </div>
+
+      <div class="sec-title-row">
+        <div class="sec-title">Évolution globale (12 mois)</div>
+      </div>
+      <div class="chart-card" style="margin-bottom:0;">
+        <div class="chart-svg-wrap">
+          ${buildLineChart({data:[40,48,45,55,60,58,65,70,68,72,74,76], height:120})}
+        </div>
+        <div class="chart-x-labels">
+          <span>J</span><span>F</span><span>M</span><span>A</span><span>M</span><span>J</span><span>J</span><span>A</span><span>S</span><span>O</span><span>N</span><span>D</span>
+        </div>
+      </div>
+
+      <div style="height:90px;"></div>
+    </div>
+
+    <!-- TABBAR -->
+    <div class="tabbar">
+      <div class="tab">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 13L9 8L13 12L20 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 19H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Dashboard
+      </div>
+      <div class="tab">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2.5" stroke="currentColor" stroke-width="2"/><path d="M3 10H21M8 3V6M16 3V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Calendrier
+      </div>
+      <div class="tab active">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V5M4 19H20M9 19V11M14 19V7M19 19V14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Stats
+      </div>
+      <div class="tab">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="2"/><path d="M5 20C5 16.5 8 14 12 14C16 14 19 16.5 19 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Profil
+      </div>
+    </div>
+  </div>
+`;
+
+/* ============================================================
+   ÉCRAN 07 — PROFIL UTILISATEUR
+   ============================================================ */
+document.getElementById('screen-profile').innerHTML = `
+  <div class="statusbar">
+    <span class="time">09:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 18 12" width="18" height="12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="0.5"/><rect x="5" y="4" width="3" height="8" rx="0.5"/><rect x="10" y="1" width="3" height="11" rx="0.5"/><rect x="15" y="0" width="3" height="12" rx="0.5"/></svg>
+      <svg viewBox="0 0 16 12" width="16" height="12" fill="currentColor"><path d="M8 2.5C11 2.5 13.5 3.7 15 5.5L13.7 7C12.5 5.5 10.4 4.5 8 4.5C5.6 4.5 3.5 5.5 2.3 7L1 5.5C2.5 3.7 5 2.5 8 2.5Z"/><circle cx="8" cy="9.5" r="1.6"/></svg>
+      <svg viewBox="0 0 25 12" width="25" height="12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="16" height="8" rx="1.2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+    </div>
+  </div>
+
+  <div class="profile">
+    <div class="profile-scroll">
+      <div class="profile-top">
+        <div class="profile-settings-btn">
+          <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><circle cx="8.5" cy="8.5" r="2.3" stroke="currentColor" stroke-width="1.5"/><path d="M8.5 1.5V3.2M8.5 13.8V15.5M15.5 8.5H13.8M3.2 8.5H1.5M13.4 3.6L12.2 4.8M4.8 12.2L3.6 13.4M13.4 13.4L12.2 12.2M4.8 4.8L3.6 3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+
+      <div class="profile-id">
+        <div class="profile-avatar-big">Y</div>
+        <div class="profile-name">Yanis Bensaïd</div>
+        <div class="profile-handle">membre depuis mars 2026</div>
+      </div>
+
+      <div class="profile-rank-card">
+        <div class="profile-rank-row">
+          <div>
+            <div class="profile-rank-name">Niveau 7 — Rigoureux</div>
+            <div class="profile-rank-next">860 PD avant le niveau 8</div>
+          </div>
+          <div class="profile-rank-pts">4 820 PD</div>
+        </div>
+        <div class="profile-progress-bg"><div class="profile-progress-fill" style="width:62%;"></div></div>
+      </div>
+
+      <div class="profile-grid-stats">
+        <div class="pgs-card"><div class="v">76%</div><div class="l">Moy. 30j</div></div>
+        <div class="pgs-card"><div class="v">18</div><div class="l">Best streak</div></div>
+        <div class="pgs-card"><div class="v">312</div><div class="l">Tâches</div></div>
+      </div>
+
+      <div class="sec-title-row" style="margin-top:2px;">
+        <div class="sec-title">Distinctions</div>
+        <div class="sec-link">Tout voir</div>
+      </div>
+      <div class="badges-row">
+        <div class="badge-pill unlocked">
+          <div class="badge-circle unlocked">
+            <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M13 2L15.5 8.5L22 9L16.5 13.2L18.5 20L13 16L7.5 20L9.5 13.2L4 9L10.5 8.5L13 2Z" stroke="var(--signal-500)" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="bl">7 jours<br>parfaits</div>
+        </div>
+        <div class="badge-pill unlocked">
+          <div class="badge-circle unlocked">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2C12 2 6 8 6 13C6 16.3 8.7 19 12 19C15.3 19 18 16.3 18 13C18 8 12 2 12 2Z" stroke="var(--signal-500)" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="bl">Série de<br>15 jours</div>
+        </div>
+        <div class="badge-pill">
+          <div class="badge-circle">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="3" stroke="var(--gray-600)" stroke-width="1.5"/></svg>
+          </div>
+          <div class="bl">5000 PD<br>cumulés</div>
+        </div>
+        <div class="badge-pill">
+          <div class="badge-circle">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="var(--gray-600)" stroke-width="1.5"/></svg>
+          </div>
+          <div class="bl">Niveau<br>10</div>
+        </div>
+      </div>
+
+      <div class="sec-title-row">
+        <div class="sec-title">Compte</div>
+      </div>
+      <div class="profile-menu">
+        <div class="profile-menu-row">
+          <div class="profile-menu-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4.5C2 3.7 2.7 3 3.5 3H12.5C13.3 3 14 3.7 14 4.5V11.5C14 12.3 13.3 13 12.5 13H3.5C2.7 13 2 12.3 2 11.5V4.5Z" stroke="currentColor" stroke-width="1.5"/><path d="M2 5L8 8.5L14 5" stroke="currentColor" stroke-width="1.5"/></svg></div>
+          <div class="profile-menu-text">Notifications</div>
+          <svg class="profile-menu-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2.5L10 7L5 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="profile-menu-row">
+          <div class="profile-menu-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5V8L10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          <div class="profile-menu-text">Historique complet</div>
+          <svg class="profile-menu-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2.5L10 7L5 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="profile-menu-row">
+          <div class="profile-menu-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L14 4V8C14 11.5 11.5 14 8 15C4.5 14 2 11.5 2 8V4L8 1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+          <div class="profile-menu-text">Confidentialité &amp; données</div>
+          <svg class="profile-menu-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2.5L10 7L5 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="profile-menu-row">
+          <div class="profile-menu-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8H10M10 8L7.5 5.5M10 8L7.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 2H13.5C13.8 2 14 2.2 14 2.5V13.5C14 13.8 13.8 14 13.5 14H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          <div class="profile-menu-text">Exporter mes données</div>
+          <svg class="profile-menu-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2.5L10 7L5 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+
+      <button class="btn-ghost-danger">Se déconnecter</button>
+
+      <div style="height:90px;"></div>
+    </div>
+
+    <!-- TABBAR -->
+    <div class="tabbar">
+      <div class="tab">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 13L9 8L13 12L20 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 19H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Dashboard
+      </div>
+      <div class="tab">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2.5" stroke="currentColor" stroke-width="2"/><path d="M3 10H21M8 3V6M16 3V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Calendrier
+      </div>
+      <div class="tab">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V5M4 19H20M9 19V11M14 19V7M19 19V14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Stats
+      </div>
+      <div class="tab active">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="2"/><path d="M5 20C5 16.5 8 14 12 14C16 14 19 16.5 19 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Profil
+      </div>
+    </div>
+  </div>
+`;
+</script>
+</body>
+</html>
